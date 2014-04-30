@@ -22,7 +22,7 @@ scancodes = {
     36: u'J', 37: u'K', 38: u'L', 39: u';', 40: u'"', 41: u'`', 42: u'LSHFT',
     43: u'\\', 44: u'Z', 45: u'X', 46: u'C', 47: u'V', 48: u'B', 49: u'N',
     50: u'M', 51: u',', 52: u'.', 53: u'/', 54: u'RSHFT', 56: u'LALT',
-    100: u'RALT'
+    57: ' ', 100: u'RALT'
 }
 
 scanner_name = 'WIT Electron Company WIT 122-UFS V2.03'
@@ -70,7 +70,7 @@ def main():
                     try:
                         barcode += scancodes[data.scancode]
                     except KeyError:
-                        print >>sys.stderr, "Unknown scancode:" + data.scancode
+                        print >>sys.stderr, "Unknown scancode: {0}".format(data.scancode)
 
 
 if __name__ == '__main__':
