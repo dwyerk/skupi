@@ -52,14 +52,25 @@ def main():
     dev.grab()
 
     barcode = ""
+    last_event_time = 0
+    last_event_id = None
+
     for event in dev.read_loop():
         if event.type == ecodes.EV_KEY:
             data = categorize(event)
             # Catch only keydown, and not Enter
             if data.keystate == 1 and data.scancode != 42:
                 if data.scancode == 28:
-                    event_id = uuid.uuid1()
                     timestamp = time.time()
+
+                    if timestamp - last_event_time < 10:
+                        event_id = last_event_id
+                    else:
+                        event_id = uuid.uuid1()
+                        last_event_id = event_id
+
+                    last_event_time = timestamp
+
                     db.execute(
                         'insert into scans (barcode, timestamp, event_id) ' +
                         'values (:barcode, :timestamp, :event_id)',
