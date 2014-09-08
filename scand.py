@@ -29,7 +29,7 @@ scancodes = {
 scanner_name = 'WIT Electron Company WIT 122-UFS V2.03'
 
 def main():
-    graphiteudp.init('carbon', prefix='humangeo.kitchen')
+    graphiteudp.init('carbon', prefix='humangeo.kitchen.pi')
     dbfile = os.path.join(os.environ.get('HOME'), 'scans.sqlite3')
     dbfile = 'scans.sqlite3'
     need_schema = False
