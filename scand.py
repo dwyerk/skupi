@@ -11,6 +11,7 @@ import sqlite3
 import os
 import uuid
 import time
+import graphiteudp
 
 scancodes = {
     # Scancode: ASCIICode
@@ -28,6 +29,7 @@ scancodes = {
 scanner_name = 'WIT Electron Company WIT 122-UFS V2.03'
 
 def main():
+    graphiteudp.init('carbon', prefix='kitchen')
     dbfile = os.path.join(os.environ.get('HOME'), 'scans.sqlite3')
     dbfile = 'scans.sqlite3'
     need_schema = False
@@ -71,6 +73,7 @@ def main():
 
                     last_event_time = timestamp
 
+                    graphiteudp.send('event.scan', 1)
                     db.execute(
                         'insert into scans (barcode, timestamp, event_id) ' +
                         'values (:barcode, :timestamp, :event_id)',
