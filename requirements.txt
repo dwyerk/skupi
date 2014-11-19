@@ -1,2 +1,4 @@
+argparse==1.2.1
+configparser==3.3.0r2
 evdev
 graphiteudp

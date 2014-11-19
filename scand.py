@@ -12,6 +12,7 @@ import os
 import uuid
 import time
 import graphiteudp
+from ConfigParser import ConfigParser
 
 scancodes = {
     # Scancode: ASCIICode
@@ -28,8 +29,11 @@ scancodes = {
 
 scanner_name = 'WIT Electron Company WIT 122-UFS V2.03'
 
-def main():
-    graphiteudp.init('carbon', prefix='humangeo.kitchen.pi')
+def main(config):
+    graphite_server = config.get("graphite", "server")
+    graphite_prefix = config.get("graphite", "prefix")
+    print "Initializing graphiteudp, server: {}, prefix: {}".format(graphite_server, graphite_prefix)
+    graphiteudp.init(graphite_server, prefix=graphite_prefix)
     dbfile = os.path.join(os.environ.get('HOME'), 'scans.sqlite3')
     dbfile = 'scans.sqlite3'
     need_schema = False
@@ -86,6 +90,11 @@ def main():
                     except KeyError:
                         print >>sys.stderr, "Unknown scancode: {0}".format(data.scancode)
 
+def parse_config():
+	config_parser = ConfigParser()
+	config_parser.read("scand.cfg")
+	return config_parser
 
 if __name__ == '__main__':
-    main()
+    config = parse_config()
+    main(config)
