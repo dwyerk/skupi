@@ -1,0 +1,9 @@
+# SAMPLE CONFIG
+
+[graphite]
+
+# Graphite server to send stats to
+server = localhost
+
+# Prefix for all graphite stats sent by scand
+prefix = important.scans
