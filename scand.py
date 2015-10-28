@@ -56,6 +56,17 @@ def init_database(dbfile='scans.sqlite3'):
         connection.execute('create table scans(barcode text, timestamp datetime, event_id text)')
     return connection
 
+def get_input_device(name=SCANNER_NAME):
+    """Get the scanner
+
+    :param name: The (reported) name of the scanner
+    :returns: The scanning device
+
+    """
+    dev = [InputDevice(device) for device in list_devices()
+           if InputDevice(device).name == name][0]
+    return dev
+
 def main(config):
     """Initializes the scanner and runs the main event loop.
 
@@ -65,9 +76,7 @@ def main(config):
     init_graphite(config.get("graphite", "server"), config.get("graphite", "prefix"))
 
     connection = init_database()
-
-    dev = [InputDevice(device) for device in list_devices()
-           if InputDevice(device).name == SCANNER_NAME][0]
+    dev = get_input_device()
 
     def signal_handler(incoming_signal, dataframe): # pylint: disable=unused-argument
         """Handle SIGINTs

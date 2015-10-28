@@ -1,11 +1,19 @@
 """Test the scand (as best as we can)"""
 
-# pylint: disable=missing-docstring,invalid-name
+# pylint: disable=missing-docstring,invalid-name,unnecessary-lambda
 
 import mock
-from nose.tools import eq_
+from nose.tools import eq_, raises
 
 import scand
+
+class InputDeviceMock(object):
+    def __init__(self, name):
+        self._name = name
+
+    @property
+    def name(self):
+        return self._name
 
 @mock.patch("graphiteudp.init")
 def test_init_graphite(graphite_init):
@@ -47,3 +55,30 @@ def test_init_database_custom(connect_function, path_exists):
     path_exists.assert_called_with('TESTSCAN')
     connect_function.assert_called_with('TESTSCAN')
     eq_(conn_mock.execute.called, True)
+
+@mock.patch("scand.list_devices")
+@mock.patch("scand.InputDevice")
+def test_get_input_device_default_present(input_device, list_devices_function):
+    list_devices_function.return_value = ['TEST1', scand.SCANNER_NAME]
+    input_device.side_effect = lambda name: InputDeviceMock(name)
+    device = scand.get_input_device()
+    assert isinstance(device, InputDeviceMock)
+    eq_(device.name, scand.SCANNER_NAME)
+
+@raises(IndexError)
+@mock.patch("scand.list_devices")
+@mock.patch("scand.InputDevice")
+def test_get_input_device_default_missing(input_device, list_devices_function):
+    list_devices_function.return_value = ['TEST1', 'TEST2']
+    input_device.side_effect = lambda name: InputDeviceMock(name)
+    scand.get_input_device()
+
+@mock.patch("scand.list_devices")
+@mock.patch("scand.InputDevice")
+def test_get_input_device_nondefault_present(input_device, list_devices_function):
+    list_devices_function.return_value = ['TEST1', 'TEST2', scand.SCANNER_NAME]
+    input_device.side_effect = lambda name: InputDeviceMock(name)
+    device = scand.get_input_device('TEST2')
+    assert isinstance(device, InputDeviceMock)
+    eq_(device.name, 'TEST2')
+
