@@ -30,16 +30,23 @@ SCANCODES = {
 SCANNER_NAME = 'WIT Electron Company WIT 122-UFS V2.03'
 DBFILE = 'scans.sqlite3'
 
+def init_graphite(server, prefix):
+    """Initializes the graphite settings
+
+    :param server: The graphite server to connect to
+    :param prefix: The prefix to prepend to sent data
+
+    """
+    print "Initializing graphiteudp, server: {}, prefix: {}".format(server, prefix)
+    graphiteudp.init(server, prefix=prefix)
+
 def main(config):
     """Initializes the scanner and runs the main event loop.
 
     :param config: Scanner configuration object
 
     """
-    graphite_server = config.get("graphite", "server")
-    graphite_prefix = config.get("graphite", "prefix")
-    print "Initializing graphiteudp, server: {}, prefix: {}".format(graphite_server, graphite_prefix)
-    graphiteudp.init(graphite_server, prefix=graphite_prefix)
+    init_graphite(config.get("graphite", "server"), config.get("graphite", "prefix"))
     need_schema = False
     if not os.path.exists(DBFILE):
         need_schema = True
