@@ -28,7 +28,6 @@ SCANCODES = {
 }
 
 SCANNER_NAME = 'WIT Electron Company WIT 122-UFS V2.03'
-DBFILE = 'scans.sqlite3'
 
 def init_graphite(server, prefix):
     """Initializes the graphite settings
@@ -40,6 +39,23 @@ def init_graphite(server, prefix):
     print "Initializing graphiteudp, server: {}, prefix: {}".format(server, prefix)
     graphiteudp.init(server, prefix=prefix)
 
+def init_database(dbfile='scans.sqlite3'):
+    """Initialize the database
+
+    :param dbfile: The database file to base on
+    :returns: The database connnection
+
+    """
+    need_schema = False
+    if not os.path.exists(dbfile):
+        need_schema = True
+
+    connection = sqlite3.connect(dbfile)
+
+    if need_schema:
+        connection.execute('create table scans(barcode text, timestamp datetime, event_id text)')
+    return connection
+
 def main(config):
     """Initializes the scanner and runs the main event loop.
 
@@ -47,14 +63,8 @@ def main(config):
 
     """
     init_graphite(config.get("graphite", "server"), config.get("graphite", "prefix"))
-    need_schema = False
-    if not os.path.exists(DBFILE):
-        need_schema = True
 
-    connection = sqlite3.connect(DBFILE)
-
-    if need_schema:
-        connection.execute('create table scans(barcode text, timestamp datetime, event_id text)')
+    connection = init_database()
 
     dev = [InputDevice(device) for device in list_devices()
            if InputDevice(device).name == SCANNER_NAME][0]
