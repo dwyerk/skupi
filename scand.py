@@ -14,7 +14,7 @@ import time
 import graphiteudp
 from ConfigParser import ConfigParser
 
-scancodes = {
+SCANCODES = {
     # Scancode: ASCIICode
     0: None, 1: u'ESC', 2: u'1', 3: u'2', 4: u'3', 5: u'4', 6: u'5', 7: u'6',
     8: u'7', 9: u'8', 10: u'9', 11: u'0', 12: u'-', 13: u'=', 14: u'BKSP',
@@ -27,28 +27,38 @@ scancodes = {
     57: ' ', 100: u'RALT'
 }
 
-scanner_name = 'WIT Electron Company WIT 122-UFS V2.03'
+SCANNER_NAME = 'WIT Electron Company WIT 122-UFS V2.03'
+DBFILE = 'scans.sqlite3'
 
 def main(config):
+    """Initializes the scanner and runs the main event loop.
+
+    :param config: Scanner configuration object
+
+    """
     graphite_server = config.get("graphite", "server")
     graphite_prefix = config.get("graphite", "prefix")
     print "Initializing graphiteudp, server: {}, prefix: {}".format(graphite_server, graphite_prefix)
     graphiteudp.init(graphite_server, prefix=graphite_prefix)
-    dbfile = os.path.join(os.environ.get('HOME'), 'scans.sqlite3')
-    dbfile = 'scans.sqlite3'
     need_schema = False
-    if not os.path.exists(dbfile):
+    if not os.path.exists(DBFILE):
         need_schema = True
 
-    db = sqlite3.connect(dbfile)
+    connection = sqlite3.connect(DBFILE)
 
     if need_schema:
-        db.execute('create table scans(barcode text, timestamp datetime, event_id text)')
+        connection.execute('create table scans(barcode text, timestamp datetime, event_id text)')
 
     dev = [InputDevice(device) for device in list_devices()
-           if InputDevice(device).name == scanner_name][0]
+           if InputDevice(device).name == SCANNER_NAME][0]
 
-    def signal_handler(signal, frame):
+    def signal_handler(incoming_signal, dataframe): # pylint: disable=unused-argument
+        """Handle SIGINTs
+
+        :param incoming_signal: The signal
+        :param dataframe: The data associated with the signal.
+
+        """
         print 'Stopping'
         dev.ungrab()
         sys.exit(0)
@@ -78,23 +88,28 @@ def main(config):
                     last_event_time = timestamp
 
                     graphiteudp.send('event.scan', 1)
-                    db.execute(
+                    connection.execute(
                         'insert into scans (barcode, timestamp, event_id) ' +
                         'values (:barcode, :timestamp, :event_id)',
                         [barcode, timestamp, event_id.get_urn()])
-                    db.commit()
+                    connection.commit()
                     barcode = ""
                 else:
                     try:
-                        barcode += scancodes[data.scancode]
+                        barcode += SCANCODES[data.scancode]
                     except KeyError:
                         print >>sys.stderr, "Unknown scancode: {0}".format(data.scancode)
 
 def parse_config():
-	config_parser = ConfigParser()
-	config_parser.read("scand.cfg")
-	return config_parser
+    """Parse out the scand configuration settings.
+
+    :returns: The parsed configuration
+
+    """
+    config_parser = ConfigParser()
+    config_parser.read("scand.cfg")
+    return config_parser
 
 if __name__ == '__main__':
-    config = parse_config()
-    main(config)
+    CONFIG = parse_config()
+    main(CONFIG)
