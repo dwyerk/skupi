@@ -2,18 +2,15 @@
 
 # pylint: disable=missing-docstring,invalid-name,unnecessary-lambda
 
+from collections import namedtuple
 import mock
 from nose.tools import eq_, raises
 
 import scand
 
-class InputDeviceMock(object):
-    def __init__(self, name):
-        self._name = name
-
-    @property
-    def name(self):
-        return self._name
+InputDeviceMock = namedtuple("InputDeviceMock", "name")
+EventMock = namedtuple("EventMock", "type keystate scancode")
+EventMock.__new__.__defaults__ = (0, 0, 42)
 
 @mock.patch("graphiteudp.init")
 def test_init_graphite(graphite_init):
@@ -82,3 +79,30 @@ def test_get_input_device_nondefault_present(input_device, list_devices_function
     assert isinstance(device, InputDeviceMock)
     eq_(device.name, 'TEST2')
 
+@mock.patch("scand.init_graphite")
+@mock.patch("scand.init_database")
+@mock.patch("scand.get_input_device")
+@mock.patch("scand.categorize")
+def test_main_no_input(categorize, get_input, init_db, init_graphite):
+    SAMPLE_CONFIG = {"graphite": None} # Doesn't emulate the config, but gets the job done
+    dev = get_input.return_value
+    dev.read_loop.return_value = [EventMock(0), EventMock(0)]
+    scand.main(SAMPLE_CONFIG)
+    eq_(dev.grab.called, True)
+    eq_(dev.read_loop.called, True)
+    eq_(categorize.called, False)
+
+@mock.patch("scand.init_graphite")
+@mock.patch("scand.init_database")
+@mock.patch("scand.get_input_device")
+@mock.patch("scand.categorize")
+def test_main_input_invalid_keystate(categorize, get_input, init_db, init_graphite):
+    SAMPLE_CONFIG = {"graphite": None} # Doesn't emulate the config, but gets the job done
+    dev = get_input.return_value
+    dev.read_loop.return_value = [EventMock(scand.ecodes.EV_KEY, 0), EventMock(scand.ecodes.EV_KEY)]
+    data = categorize.return_value
+    data.keystate.return_val
+    scand.main(SAMPLE_CONFIG)
+    eq_(dev.grab.called, True)
+    eq_(dev.read_loop.called, True)
+    eq_(categorize.called, True)
