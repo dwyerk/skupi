@@ -28,7 +28,44 @@ SCANCODES = {
 }
 
 SCANNER_NAME = 'WIT Electron Company WIT 122-UFS V2.03'
-DBFILE = 'scans.sqlite3'
+
+def init_graphite(server, prefix):
+    """Initializes the graphite settings
+
+    :param server: The graphite server to connect to
+    :param prefix: The prefix to prepend to sent data
+
+    """
+    print "Initializing graphiteudp, server: {}, prefix: {}".format(server, prefix)
+    graphiteudp.init(server, prefix=prefix)
+
+def init_database(dbfile='scans.sqlite3'):
+    """Initialize the database
+
+    :param dbfile: The database file to base on
+    :returns: The database connnection
+
+    """
+    need_schema = False
+    if not os.path.exists(dbfile):
+        need_schema = True
+
+    connection = sqlite3.connect(dbfile)
+
+    if need_schema:
+        connection.execute('create table scans(barcode text, timestamp datetime, event_id text)')
+    return connection
+
+def get_input_device(name=SCANNER_NAME):
+    """Get the scanner
+
+    :param name: The (reported) name of the scanner
+    :returns: The scanning device
+
+    """
+    dev = [InputDevice(device) for device in list_devices()
+           if InputDevice(device).name == name][0]
+    return dev
 
 def main(config):
     """Initializes the scanner and runs the main event loop.
@@ -36,21 +73,10 @@ def main(config):
     :param config: Scanner configuration object
 
     """
-    graphite_server = config.get("graphite", "server")
-    graphite_prefix = config.get("graphite", "prefix")
-    print "Initializing graphiteudp, server: {}, prefix: {}".format(graphite_server, graphite_prefix)
-    graphiteudp.init(graphite_server, prefix=graphite_prefix)
-    need_schema = False
-    if not os.path.exists(DBFILE):
-        need_schema = True
+    init_graphite(config.get("graphite", "server"), config.get("graphite", "prefix"))
 
-    connection = sqlite3.connect(DBFILE)
-
-    if need_schema:
-        connection.execute('create table scans(barcode text, timestamp datetime, event_id text)')
-
-    dev = [InputDevice(device) for device in list_devices()
-           if InputDevice(device).name == SCANNER_NAME][0]
+    connection = init_database()
+    dev = get_input_device()
 
     def signal_handler(incoming_signal, dataframe): # pylint: disable=unused-argument
         """Handle SIGINTs
